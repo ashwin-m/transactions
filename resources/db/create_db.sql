@@ -1,6 +1,6 @@
 GRANT ALL PRIVILEGES ON DATABASE transactions TO docker;
 
-CREATE TABLE Accounts (
+CREATE TABLE accounts (
     id INTEGER PRIMARY KEY,
     balance FLOAT8
 );

@@ -1,6 +1,10 @@
 # ide
 settings.json
+.vscode
 
 # go
 vendor/
+
+# env
+.env
 
