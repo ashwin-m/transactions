@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+//go:generate mockery --name=Dao --output=mocks --outpkg=mocks --with-expecter
 type Dao interface {
 	GetById(id int64) (accounts_model.Accounts, error)
 	Create(id int64, balanace float64) (accounts_model.Accounts, error)

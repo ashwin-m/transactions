@@ -12,8 +12,8 @@ import (
 )
 
 type createAccountsRequest struct {
-	Id      int64   `json:"id"`
-	Balance float64 `json:"initial_balance"`
+	Id      int64  `json:"account_id"`
+	Balance string `json:"initial_balance"`
 }
 
 type accounts struct {
@@ -51,7 +51,13 @@ func (h *handler) create(c *gin.Context) {
 		return
 	}
 
-	_, err = h.dao.Create(account.Id, account.Balance)
+	initialAccountBalance, err := strconv.ParseFloat(account.Balance, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
+	_, err = h.dao.Create(account.Id, initialAccountBalance)
 	if err != nil {
 		if err, ok := err.(*pgconn.PgError); ok && pgerrcode.IsIntegrityConstraintViolation(err.Code) {
 			c.JSON(http.StatusBadRequest, gin.H{})

@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+//go:generate mockery --name=Dao --output=mocks --outpkg=mocks
 type Dao interface {
 	Create(txn pgx.Tx, sourceAccountId, destinationAccountId int64, amount float64) error
 }
