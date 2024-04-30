@@ -10,6 +10,7 @@ import (
 	accounts_controller "github.com/ashwin-m/transactions/controllers/accounts"
 	"github.com/ashwin-m/transactions/controllers/transactions"
 	accounts_dao "github.com/ashwin-m/transactions/daos/accounts"
+	transactions_dao "github.com/ashwin-m/transactions/daos/transactions"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
@@ -51,14 +52,14 @@ func setupDB() *pgxpool.Pool {
 	return db
 }
 
-func setupRoutes(r *gin.Engine, accountsDao accounts_dao.Dao) {
+func setupRoutes(r *gin.Engine, dbPool *pgxpool.Pool, accountsDao accounts_dao.Dao, transactionsDao transactions_dao.Dao) {
 
 	// setup routes for accounts
 	accountsHandler := accounts_controller.NewHandler(accountsDao)
 	accountsHandler.RouteGroup(r)
 
 	// setup routes for transactions
-	transactionsHandler := transactions.NewHandler()
+	transactionsHandler := transactions.NewHandler(dbPool, accountsDao, transactionsDao)
 	transactionsHandler.RouteGroup(r)
 }
 
@@ -69,8 +70,9 @@ func main() {
 	defer db.Close()
 
 	accountsDao := accounts_dao.NewDao(db)
+	transactionsDao := transactions_dao.NewDao(db)
 
-	setupRoutes(r, accountsDao)
+	setupRoutes(r, db, accountsDao, transactionsDao)
 	// Listen and Server in 0.0.0.0:8080
 	r.Run(":8080")
 }

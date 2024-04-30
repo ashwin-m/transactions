@@ -11,6 +11,11 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+type createAccountsRequest struct {
+	Id      int64   `json:"id"`
+	Balance float64 `json:"initial_balance"`
+}
+
 type accounts struct {
 	Id      int64   `json:"id"`
 	Balance float64 `json:"balance"`
@@ -38,7 +43,7 @@ func (h *handler) RouteGroup(r *gin.Engine) {
 }
 
 func (h *handler) create(c *gin.Context) {
-	var account accounts
+	var account createAccountsRequest
 
 	err := c.ShouldBindJSON(&account)
 	if err != nil {
@@ -46,7 +51,7 @@ func (h *handler) create(c *gin.Context) {
 		return
 	}
 
-	accountModel, err := h.dao.Create(account.Id, account.Balance)
+	_, err = h.dao.Create(account.Id, account.Balance)
 	if err != nil {
 		if err, ok := err.(*pgconn.PgError); ok && pgerrcode.IsIntegrityConstraintViolation(err.Code) {
 			c.JSON(http.StatusBadRequest, gin.H{})
@@ -57,12 +62,7 @@ func (h *handler) create(c *gin.Context) {
 		return
 	}
 
-	accountResponse := accounts{
-		Id:      accountModel.GetId(),
-		Balance: accountModel.GetBalance(),
-	}
-
-	c.JSON(http.StatusOK, accountResponse)
+	c.JSON(http.StatusNoContent, "")
 
 }
 
