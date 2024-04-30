@@ -3,22 +3,22 @@ package transactions
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	accounts_dao "github.com/ashwin-m/transactions/daos/accounts"
 	transactions_dao "github.com/ashwin-m/transactions/daos/transactions"
+	"github.com/ashwin-m/transactions/utils/pgxiface"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type createTransactionRequest struct {
-	SourceAccountId      int64   `json:"source_account_id"`
-	DestinationAccountId int64   `json:"destination_account_id"`
-	Amount               float64 `json:"amount"`
+	SourceAccountId      int64  `json:"source_account_id"`
+	DestinationAccountId int64  `json:"destination_account_id"`
+	Amount               string `json:"amount"`
 }
 
 type handler struct {
-	dbPool          *pgxpool.Pool
+	dbPool          pgxiface.PgxIface
 	accountsDao     accounts_dao.Dao
 	transactionsDao transactions_dao.Dao
 }
@@ -27,7 +27,7 @@ type Handler interface {
 	RouteGroup(*gin.Engine)
 }
 
-func NewHandler(dbPool *pgxpool.Pool, accountsDao accounts_dao.Dao, transactionsDao transactions_dao.Dao) Handler {
+func NewHandler(dbPool pgxiface.PgxIface, accountsDao accounts_dao.Dao, transactionsDao transactions_dao.Dao) Handler {
 	return &handler{
 		dbPool:          dbPool,
 		accountsDao:     accountsDao,
@@ -50,6 +50,12 @@ func (h *handler) create(c *gin.Context) {
 		return
 	}
 
+	amount, err := strconv.ParseFloat(request.Amount, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{})
+		return
+	}
+
 	sourceAccount, err := h.accountsDao.GetById(request.SourceAccountId)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{})
@@ -66,7 +72,7 @@ func (h *handler) create(c *gin.Context) {
 
 	destinationAccountBalance := destinationAccount.GetBalance()
 
-	if sourceAccountBalance < request.Amount {
+	if sourceAccountBalance < amount {
 		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
@@ -77,14 +83,14 @@ func (h *handler) create(c *gin.Context) {
 		return
 	}
 
-	err = h.transactionsDao.Create(txn, sourceAccount.GetId(), destinationAccount.GetId(), request.Amount)
+	err = h.transactionsDao.Create(txn, sourceAccount.GetId(), destinationAccount.GetId(), amount)
 	if err != nil {
 		txn.Rollback(context.Background())
 		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
 
-	newSourceAccountBalance := sourceAccountBalance - request.Amount
+	newSourceAccountBalance := sourceAccountBalance - amount
 	_, err = h.accountsDao.UpdateBalance(txn, request.SourceAccountId, newSourceAccountBalance)
 	if err != nil {
 		txn.Rollback(context.Background())
@@ -92,7 +98,7 @@ func (h *handler) create(c *gin.Context) {
 		return
 	}
 
-	newDestinationAccountBalance := destinationAccountBalance + request.Amount
+	newDestinationAccountBalance := destinationAccountBalance + amount
 	_, err = h.accountsDao.UpdateBalance(txn, request.DestinationAccountId, newDestinationAccountBalance)
 	if err != nil {
 		txn.Rollback(context.Background())
@@ -101,5 +107,6 @@ func (h *handler) create(c *gin.Context) {
 	}
 
 	txn.Commit(context.Background())
+	c.JSON(http.StatusNoContent, "")
 
 }

@@ -17,7 +17,7 @@ type createAccountsRequest struct {
 }
 
 type accounts struct {
-	Id      int64   `json:"id"`
+	Id      int64   `json:"account_id"`
 	Balance float64 `json:"balance"`
 }
 
