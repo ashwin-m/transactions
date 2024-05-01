@@ -8,9 +8,25 @@ You need to have the following installed to run this application:
 * Docker compose plugin
 
 ### How to run ###
+You will have to first setup your env file. You can do this with:
+```commandline
+mv .env.sample .env
+```
+
+If you are running this application on a mac machine, change the `DB_HOST` variable to `host.docker.internal`
+
+If you are running this application on a linux machine, uncomment the specified lines in the docker-compose.yml file
+
 You can run this server by running the following command: `docker compose up`
 
-This will run the application on your local host.
+This will run the application on your localhost. This also imports and sets up postgres for you.
+
+You can also run this without docker by running the following command:
+```commandline
+go run main.go
+```
+
+But in this case, you will have to setup postgres on your own and update the env variables accordingly.
 
 ### APIs ###
 
@@ -59,7 +75,12 @@ curl --location 'http://localhost/transactions' \
 ```
 
 Sample response:
-Status: 204 No Content
+Status: 200 OK
+```json
+{
+    "transaction_id": 1
+}
+```
 
 ### Future Improvements ###
 The following are planned improvements:

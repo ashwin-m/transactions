@@ -1,7 +1,8 @@
 services:
   web:
     build: .
-    network_mode: host
+    # uncomment the line below if running on linux machine
+    # network_mode: host
     ports:
       - "80:8080"
     depends_on:
@@ -11,6 +12,8 @@ services:
   db:
     image: postgres:16.2
     restart: always
+    # uncomment the line below if running on linux machine
+    # network_mode: host
     environment:
       POSTGRES_DB: transactions
       POSTGRES_USER: docker
