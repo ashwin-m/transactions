@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	prec                                = 5
+	prec                                = 100
 	min_transaction_amount              = 0
 	min_account_balance_for_transaction = 0
 )
@@ -80,7 +80,7 @@ func (h *handler) create(c *gin.Context) {
 
 	err = validateSourceAccount(sourceAccount, amount)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -116,7 +116,7 @@ func (h *handler) create(c *gin.Context) {
 		return
 	}
 
-	newDestinationAccountBalance := big.NewFloat(0).Sub(destinationAccountBalance, amount)
+	newDestinationAccountBalance := big.NewFloat(0).Add(destinationAccountBalance, amount)
 	newDestinationAccountBalanceFloat, _ := newDestinationAccountBalance.Float64()
 	_, err = h.accountsDao.UpdateBalance(txn, request.DestinationAccountId, destinationAccount.GetVersion(), newDestinationAccountBalanceFloat)
 	if err != nil {

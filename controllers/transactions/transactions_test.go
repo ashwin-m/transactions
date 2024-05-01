@@ -38,7 +38,7 @@ func TestTransactionsCreate_BalancePassedAsInt(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, "{}", w.Body.String())
+	assert.Equal(t, "{\"error\":\"json: cannot unmarshal number into Go struct field createTransactionRequest.amount of type string\"}", w.Body.String())
 }
 
 func TestTransactionsCreate_BalancePassedAsBadFloat(t *testing.T) {
@@ -63,7 +63,7 @@ func TestTransactionsCreate_BalancePassedAsBadFloat(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, "{}", w.Body.String())
+	assert.Equal(t, "{\"error\":\"unable to parse request amount\"}", w.Body.String())
 }
 
 func TestTransactionsCreate_SourceAccountDaoReturnsError(t *testing.T) {
@@ -89,7 +89,7 @@ func TestTransactionsCreate_SourceAccountDaoReturnsError(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
-	assert.Equal(t, "{}", w.Body.String())
+	assert.Equal(t, "{\"error\":\"test\"}", w.Body.String())
 }
 
 func TestTransactionsCreate_DestinationAccountDaoReturnsError(t *testing.T) {
@@ -100,7 +100,7 @@ func TestTransactionsCreate_DestinationAccountDaoReturnsError(t *testing.T) {
 	sourceAccountId := int64(123)
 	sourceAccount := accountsmodel.Accounts{}
 	sourceAccount.SetId(sourceAccountId)
-	sourceAccount.SetBalance(100.1)
+	sourceAccount.SetBalance(200.1)
 	mockAccountsDao.EXPECT().GetById(sourceAccountId).Return(sourceAccount, nil)
 
 	destinationAccountId := int64(456)
@@ -125,7 +125,7 @@ func TestTransactionsCreate_DestinationAccountDaoReturnsError(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
-	assert.Equal(t, "{}", w.Body.String())
+	assert.Equal(t, "{\"error\":\"test\"}", w.Body.String())
 }
 
 func TestTransactionsCreate_SourceAccountHasLessBalance(t *testing.T) {
@@ -139,12 +139,6 @@ func TestTransactionsCreate_SourceAccountHasLessBalance(t *testing.T) {
 	sourceAccount.SetBalance(100.1)
 	mockAccountsDao.EXPECT().GetById(sourceAccountId).Return(sourceAccount, nil)
 
-	destinationAccountId := int64(456)
-	destinationAccount := accountsmodel.Accounts{}
-	destinationAccount.SetId(destinationAccountId)
-	destinationAccount.SetBalance(200.1)
-	mockAccountsDao.EXPECT().GetById(destinationAccountId).Return(destinationAccount, nil)
-
 	mocktransactionsDao := transactionsdaomocks.NewDao(t)
 	mockDB, _ := pgxmock.NewPool()
 
@@ -154,7 +148,7 @@ func TestTransactionsCreate_SourceAccountHasLessBalance(t *testing.T) {
 	body := `{
 		"source_account_id": 123,
 		"destination_account_id": 456,
-		"amount": "100.12345"
+		"amount": "200.12345"
 	}`
 	bodyReader := strings.NewReader(body)
 
@@ -163,7 +157,7 @@ func TestTransactionsCreate_SourceAccountHasLessBalance(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, "{}", w.Body.String())
+	assert.Equal(t, "{\"error\":\"account balance is less than transaction\"}", w.Body.String())
 }
 
 func TestTransactionsCreate_UnableToStartTxn(t *testing.T) {
@@ -203,7 +197,7 @@ func TestTransactionsCreate_UnableToStartTxn(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Equal(t, "{}", w.Body.String())
+	assert.Equal(t, "{\"error\":\"test\"}", w.Body.String())
 }
 
 func TestTransactionsCreate_TransactionCreateReturnsError(t *testing.T) {
@@ -226,7 +220,7 @@ func TestTransactionsCreate_TransactionCreateReturnsError(t *testing.T) {
 	mockAccountsDao.EXPECT().GetById(destinationAccountId).Return(destinationAccount, nil)
 
 	mocktransactionsDao := transactionsdaomocks.NewDao(t)
-	mocktransactionsDao.EXPECT().Create(mock.Anything, sourceAccountId, destinationAccountId, amount).Return(errors.New("test"))
+	mocktransactionsDao.EXPECT().Create(mock.Anything, sourceAccountId, destinationAccountId, amount).Return(0, errors.New("test"))
 
 	mockDB, _ := pgxmock.NewPool()
 	mockDB.ExpectBegin()
@@ -247,7 +241,7 @@ func TestTransactionsCreate_TransactionCreateReturnsError(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Equal(t, "{}", w.Body.String())
+	assert.Equal(t, "{\"error\":\"test\"}", w.Body.String())
 }
 
 func TestTransactionsCreate_UpdateSourceAccountReturnsError(t *testing.T) {
@@ -262,6 +256,8 @@ func TestTransactionsCreate_UpdateSourceAccountReturnsError(t *testing.T) {
 	sourceAccount.SetId(sourceAccountId)
 	sourceAccountBalance := 300.1
 	sourceAccount.SetBalance(sourceAccountBalance)
+	sourceVersion := int64(1)
+	sourceAccount.SetVersion(sourceVersion)
 	mockAccountsDao.EXPECT().GetById(sourceAccountId).Return(sourceAccount, nil)
 
 	destinationAccountId := int64(456)
@@ -272,10 +268,10 @@ func TestTransactionsCreate_UpdateSourceAccountReturnsError(t *testing.T) {
 	mockAccountsDao.EXPECT().GetById(destinationAccountId).Return(destinationAccount, nil)
 
 	mocktransactionsDao := transactionsdaomocks.NewDao(t)
-	mocktransactionsDao.EXPECT().Create(mock.Anything, sourceAccountId, destinationAccountId, amount).Return(nil)
+	mocktransactionsDao.EXPECT().Create(mock.Anything, sourceAccountId, destinationAccountId, amount).Return(1, nil)
 
 	newSourceAccountBalance := sourceAccountBalance - amount
-	mockAccountsDao.EXPECT().UpdateBalance(mock.Anything, sourceAccountId, newSourceAccountBalance).Return(sourceAccount, errors.New("test"))
+	mockAccountsDao.EXPECT().UpdateBalance(mock.Anything, sourceAccountId, sourceVersion, newSourceAccountBalance).Return(sourceAccount, errors.New("test"))
 
 	mockDB, _ := pgxmock.NewPool()
 	mockDB.ExpectBegin()
@@ -296,7 +292,7 @@ func TestTransactionsCreate_UpdateSourceAccountReturnsError(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Equal(t, "{}", w.Body.String())
+	assert.Equal(t, "{\"error\":\"test\"}", w.Body.String())
 }
 
 func TestTransactionsCreate_UpdateDestinationAccountReturnsError(t *testing.T) {
@@ -311,6 +307,8 @@ func TestTransactionsCreate_UpdateDestinationAccountReturnsError(t *testing.T) {
 	sourceAccount.SetId(sourceAccountId)
 	sourceAccountBalance := 300.1
 	sourceAccount.SetBalance(sourceAccountBalance)
+	sourceVersion := int64(1)
+	sourceAccount.SetVersion(sourceVersion)
 	mockAccountsDao.EXPECT().GetById(sourceAccountId).Return(sourceAccount, nil)
 
 	destinationAccountId := int64(456)
@@ -318,16 +316,18 @@ func TestTransactionsCreate_UpdateDestinationAccountReturnsError(t *testing.T) {
 	destinationAccount.SetId(destinationAccountId)
 	destinationAccountBalance := 200.1
 	destinationAccount.SetBalance(destinationAccountBalance)
+	destinationVersion := int64(2)
+	destinationAccount.SetVersion(destinationVersion)
 	mockAccountsDao.EXPECT().GetById(destinationAccountId).Return(destinationAccount, nil)
 
 	mocktransactionsDao := transactionsdaomocks.NewDao(t)
-	mocktransactionsDao.EXPECT().Create(mock.Anything, sourceAccountId, destinationAccountId, amount).Return(nil)
+	mocktransactionsDao.EXPECT().Create(mock.Anything, sourceAccountId, destinationAccountId, amount).Return(1, nil)
 
 	newSourceAccountBalance := sourceAccountBalance - amount
-	mockAccountsDao.EXPECT().UpdateBalance(mock.Anything, sourceAccountId, newSourceAccountBalance).Return(sourceAccount, nil)
+	mockAccountsDao.EXPECT().UpdateBalance(mock.Anything, sourceAccountId, sourceVersion, newSourceAccountBalance).Return(sourceAccount, nil)
 
 	newDestinationAccountBalance := destinationAccountBalance + amount
-	mockAccountsDao.EXPECT().UpdateBalance(mock.Anything, destinationAccountId, newDestinationAccountBalance).Return(sourceAccount, errors.New("test"))
+	mockAccountsDao.EXPECT().UpdateBalance(mock.Anything, destinationAccountId, destinationVersion, newDestinationAccountBalance).Return(sourceAccount, errors.New("test"))
 
 	mockDB, _ := pgxmock.NewPool()
 	mockDB.ExpectBegin()
@@ -348,7 +348,7 @@ func TestTransactionsCreate_UpdateDestinationAccountReturnsError(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Equal(t, "{}", w.Body.String())
+	assert.Equal(t, "{\"error\":\"test\"}", w.Body.String())
 }
 
 func TestTransactionsCreate_Success(t *testing.T) {
@@ -363,6 +363,8 @@ func TestTransactionsCreate_Success(t *testing.T) {
 	sourceAccount.SetId(sourceAccountId)
 	sourceAccountBalance := 300.1
 	sourceAccount.SetBalance(sourceAccountBalance)
+	sourceVersion := int64(1)
+	sourceAccount.SetVersion(sourceVersion)
 	mockAccountsDao.EXPECT().GetById(sourceAccountId).Return(sourceAccount, nil)
 
 	destinationAccountId := int64(456)
@@ -370,16 +372,18 @@ func TestTransactionsCreate_Success(t *testing.T) {
 	destinationAccount.SetId(destinationAccountId)
 	destinationAccountBalance := 200.1
 	destinationAccount.SetBalance(destinationAccountBalance)
+	destinationVersion := int64(2)
+	destinationAccount.SetVersion(destinationVersion)
 	mockAccountsDao.EXPECT().GetById(destinationAccountId).Return(destinationAccount, nil)
 
 	mocktransactionsDao := transactionsdaomocks.NewDao(t)
-	mocktransactionsDao.EXPECT().Create(mock.Anything, sourceAccountId, destinationAccountId, amount).Return(nil)
+	mocktransactionsDao.EXPECT().Create(mock.Anything, sourceAccountId, destinationAccountId, amount).Return(1, nil)
 
 	newSourceAccountBalance := sourceAccountBalance - amount
-	mockAccountsDao.EXPECT().UpdateBalance(mock.Anything, sourceAccountId, newSourceAccountBalance).Return(sourceAccount, nil)
+	mockAccountsDao.EXPECT().UpdateBalance(mock.Anything, sourceAccountId, sourceVersion, newSourceAccountBalance).Return(sourceAccount, nil)
 
 	newDestinationAccountBalance := destinationAccountBalance + amount
-	mockAccountsDao.EXPECT().UpdateBalance(mock.Anything, destinationAccountId, newDestinationAccountBalance).Return(sourceAccount, nil)
+	mockAccountsDao.EXPECT().UpdateBalance(mock.Anything, destinationAccountId, destinationVersion, newDestinationAccountBalance).Return(sourceAccount, nil)
 
 	mockDB, _ := pgxmock.NewPool()
 	mockDB.ExpectBegin()
@@ -399,6 +403,6 @@ func TestTransactionsCreate_Success(t *testing.T) {
 	req, _ := http.NewRequest("POST", "/transactions", bodyReader)
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusNoContent, w.Code)
-	assert.Empty(t, w.Body.String())
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "{\"transaction_id\":1}", w.Body.String())
 }

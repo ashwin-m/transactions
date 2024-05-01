@@ -136,9 +136,9 @@ func (_c *Dao_GetById_Call) RunAndReturn(run func(int64) (accounts.Accounts, err
 	return _c
 }
 
-// UpdateBalance provides a mock function with given fields: tx, id, newBalance
-func (_m *Dao) UpdateBalance(tx pgx.Tx, id int64, newBalance float64) (accounts.Accounts, error) {
-	ret := _m.Called(tx, id, newBalance)
+// UpdateBalance provides a mock function with given fields: tx, id, version, newBalance
+func (_m *Dao) UpdateBalance(tx pgx.Tx, id int64, version int64, newBalance float64) (accounts.Accounts, error) {
+	ret := _m.Called(tx, id, version, newBalance)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateBalance")
@@ -146,17 +146,17 @@ func (_m *Dao) UpdateBalance(tx pgx.Tx, id int64, newBalance float64) (accounts.
 
 	var r0 accounts.Accounts
 	var r1 error
-	if rf, ok := ret.Get(0).(func(pgx.Tx, int64, float64) (accounts.Accounts, error)); ok {
-		return rf(tx, id, newBalance)
+	if rf, ok := ret.Get(0).(func(pgx.Tx, int64, int64, float64) (accounts.Accounts, error)); ok {
+		return rf(tx, id, version, newBalance)
 	}
-	if rf, ok := ret.Get(0).(func(pgx.Tx, int64, float64) accounts.Accounts); ok {
-		r0 = rf(tx, id, newBalance)
+	if rf, ok := ret.Get(0).(func(pgx.Tx, int64, int64, float64) accounts.Accounts); ok {
+		r0 = rf(tx, id, version, newBalance)
 	} else {
 		r0 = ret.Get(0).(accounts.Accounts)
 	}
 
-	if rf, ok := ret.Get(1).(func(pgx.Tx, int64, float64) error); ok {
-		r1 = rf(tx, id, newBalance)
+	if rf, ok := ret.Get(1).(func(pgx.Tx, int64, int64, float64) error); ok {
+		r1 = rf(tx, id, version, newBalance)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -172,14 +172,15 @@ type Dao_UpdateBalance_Call struct {
 // UpdateBalance is a helper method to define mock.On call
 //   - tx pgx.Tx
 //   - id int64
+//   - version int64
 //   - newBalance float64
-func (_e *Dao_Expecter) UpdateBalance(tx interface{}, id interface{}, newBalance interface{}) *Dao_UpdateBalance_Call {
-	return &Dao_UpdateBalance_Call{Call: _e.mock.On("UpdateBalance", tx, id, newBalance)}
+func (_e *Dao_Expecter) UpdateBalance(tx interface{}, id interface{}, version interface{}, newBalance interface{}) *Dao_UpdateBalance_Call {
+	return &Dao_UpdateBalance_Call{Call: _e.mock.On("UpdateBalance", tx, id, version, newBalance)}
 }
 
-func (_c *Dao_UpdateBalance_Call) Run(run func(tx pgx.Tx, id int64, newBalance float64)) *Dao_UpdateBalance_Call {
+func (_c *Dao_UpdateBalance_Call) Run(run func(tx pgx.Tx, id int64, version int64, newBalance float64)) *Dao_UpdateBalance_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(pgx.Tx), args[1].(int64), args[2].(float64))
+		run(args[0].(pgx.Tx), args[1].(int64), args[2].(int64), args[3].(float64))
 	})
 	return _c
 }
@@ -189,7 +190,7 @@ func (_c *Dao_UpdateBalance_Call) Return(_a0 accounts.Accounts, _a1 error) *Dao_
 	return _c
 }
 
-func (_c *Dao_UpdateBalance_Call) RunAndReturn(run func(pgx.Tx, int64, float64) (accounts.Accounts, error)) *Dao_UpdateBalance_Call {
+func (_c *Dao_UpdateBalance_Call) RunAndReturn(run func(pgx.Tx, int64, int64, float64) (accounts.Accounts, error)) *Dao_UpdateBalance_Call {
 	_c.Call.Return(run)
 	return _c
 }

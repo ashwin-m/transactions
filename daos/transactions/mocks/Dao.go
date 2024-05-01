@@ -21,21 +21,31 @@ func (_m *Dao) EXPECT() *Dao_Expecter {
 }
 
 // Create provides a mock function with given fields: txn, sourceAccountId, destinationAccountId, amount
-func (_m *Dao) Create(txn pgx.Tx, sourceAccountId int64, destinationAccountId int64, amount float64) error {
+func (_m *Dao) Create(txn pgx.Tx, sourceAccountId int64, destinationAccountId int64, amount float64) (int64, error) {
 	ret := _m.Called(txn, sourceAccountId, destinationAccountId, amount)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
 	}
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(pgx.Tx, int64, int64, float64) error); ok {
+	var r0 int64
+	var r1 error
+	if rf, ok := ret.Get(0).(func(pgx.Tx, int64, int64, float64) (int64, error)); ok {
+		return rf(txn, sourceAccountId, destinationAccountId, amount)
+	}
+	if rf, ok := ret.Get(0).(func(pgx.Tx, int64, int64, float64) int64); ok {
 		r0 = rf(txn, sourceAccountId, destinationAccountId, amount)
 	} else {
-		r0 = ret.Error(0)
+		r0 = ret.Get(0).(int64)
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(pgx.Tx, int64, int64, float64) error); ok {
+		r1 = rf(txn, sourceAccountId, destinationAccountId, amount)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // Dao_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
@@ -59,12 +69,12 @@ func (_c *Dao_Create_Call) Run(run func(txn pgx.Tx, sourceAccountId int64, desti
 	return _c
 }
 
-func (_c *Dao_Create_Call) Return(_a0 error) *Dao_Create_Call {
-	_c.Call.Return(_a0)
+func (_c *Dao_Create_Call) Return(_a0 int64, _a1 error) *Dao_Create_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *Dao_Create_Call) RunAndReturn(run func(pgx.Tx, int64, int64, float64) error) *Dao_Create_Call {
+func (_c *Dao_Create_Call) RunAndReturn(run func(pgx.Tx, int64, int64, float64) (int64, error)) *Dao_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }

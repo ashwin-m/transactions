@@ -34,7 +34,7 @@ func TestAccountsCreate_BalancePassedAsInt(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, "{}", w.Body.String())
+	assert.Equal(t, "{\"error\":\"json: cannot unmarshal number into Go struct field createAccountsRequest.initial_balance of type string\"}", w.Body.String())
 }
 
 func TestAccountsCreate_BadFloatPassed(t *testing.T) {
@@ -56,7 +56,7 @@ func TestAccountsCreate_BadFloatPassed(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, "{}", w.Body.String())
+	assert.Equal(t, "{\"error\":\"strconv.ParseFloat: parsing \\\"abc\\\": invalid syntax\"}", w.Body.String())
 }
 
 func TestAccountsCreate_DaoReturnError(t *testing.T) {
@@ -79,7 +79,7 @@ func TestAccountsCreate_DaoReturnError(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Equal(t, "{}", w.Body.String())
+	assert.Equal(t, "{\"error\":\"test\"}", w.Body.String())
 }
 
 func TestAccountsCreate_Success(t *testing.T) {
@@ -118,7 +118,7 @@ func TestAccountsGet_BadAccountId(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, "{}", w.Body.String())
+	assert.Equal(t, "{\"error\":\"strconv.ParseInt: parsing \\\"abc\\\": invalid syntax\"}", w.Body.String())
 }
 
 func TestAccountsGet_DaoReturnNoRowsError(t *testing.T) {
@@ -138,7 +138,7 @@ func TestAccountsGet_DaoReturnNoRowsError(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
-	assert.Equal(t, "{}", w.Body.String())
+	assert.Equal(t, "{\"error\":\"no rows in result set\"}", w.Body.String())
 }
 
 func TestAccountsGet_DaoReturnError(t *testing.T) {
@@ -158,7 +158,7 @@ func TestAccountsGet_DaoReturnError(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Equal(t, "{}", w.Body.String())
+	assert.Equal(t, "{\"error\":\"test\"}", w.Body.String())
 }
 
 func TestAccountsGet_Success(t *testing.T) {
