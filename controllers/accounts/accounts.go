@@ -47,24 +47,24 @@ func (h *handler) create(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&account)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	initialAccountBalance, err := strconv.ParseFloat(account.Balance, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	_, err = h.dao.Create(account.Id, initialAccountBalance)
 	if err != nil {
 		if err, ok := err.(*pgconn.PgError); ok && pgerrcode.IsIntegrityConstraintViolation(err.Code) {
-			c.JSON(http.StatusBadRequest, gin.H{})
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusInternalServerError, gin.H{})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -77,7 +77,7 @@ func (h *handler) get(c *gin.Context) {
 
 	id, err := strconv.ParseInt(idString, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -85,7 +85,7 @@ func (h *handler) get(c *gin.Context) {
 	if err != nil {
 		switch err {
 		case pgx.ErrNoRows:
-			c.JSON(http.StatusNotFound, gin.H{})
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		default:
 			c.JSON(http.StatusInternalServerError, err.Error())

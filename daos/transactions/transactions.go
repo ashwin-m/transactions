@@ -9,7 +9,7 @@ import (
 
 //go:generate mockery --name=Dao --output=mocks --outpkg=mocks --with-expecter
 type Dao interface {
-	Create(txn pgx.Tx, sourceAccountId, destinationAccountId int64, amount float64) error
+	Create(txn pgx.Tx, sourceAccountId, destinationAccountId int64, amount float64) (int64, error)
 }
 
 type dao struct {
@@ -22,9 +22,10 @@ func NewDao(dbPool *pgxpool.Pool) Dao {
 	}
 }
 
-func (d *dao) Create(txn pgx.Tx, sourceAccountId, destinationAccountId int64, amount float64) error {
+func (d *dao) Create(txn pgx.Tx, sourceAccountId, destinationAccountId int64, amount float64) (int64, error) {
+	var transactionId int64
 	sqlStatement := "insert into transactions(source_account_id, destination_account_id, amount) values ($1, $2, $3)"
-	_, err := txn.Exec(context.Background(), sqlStatement, sourceAccountId, destinationAccountId, amount)
+	err := txn.QueryRow(context.Background(), sqlStatement, sourceAccountId, destinationAccountId, amount).Scan(&transactionId)
 
-	return err
+	return transactionId, err
 }

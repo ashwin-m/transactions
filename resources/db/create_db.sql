@@ -1,13 +1,14 @@
 GRANT ALL PRIVILEGES ON DATABASE transactions TO docker;
 
 CREATE TABLE accounts (
-    id INTEGER PRIMARY KEY,
-    balance FLOAT8
+    id SERIAL PRIMARY KEY,
+    balance FLOAT8,
+    version INTEGER
 );
 
 
-CREATE TABLE transaction_ledger (
-    id INTEGER PRIMARY KEY,
+CREATE TABLE transactions(
+    id SERIAL PRIMARY KEY,
     source_account_id INTEGER,
     destination_account_id INTEGER,
     amount FLOAT8
